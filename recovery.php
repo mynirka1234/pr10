@@ -16,6 +16,7 @@
 <html>
 	<head> 
 		<script src="https://code.jquery.com/jquery-1.8.3.js"></script>
+		<script src="https://www.google.com/recaptcha/api.js"></script>
 		<meta charset="utf-8">
 		<title> Восстановление пароля </title>
 		
@@ -58,6 +59,9 @@
 					<div class = "sub-name">Почта (логин):</div>
 					<div style="font-size: 12px; margin-bottom: 10px;">На указанную вами почту будет выслан новый пароль, для входа в систему.</div>
 					<input name="_login" type="text" placeholder="E-mail@mail.ru"/>
+					<center>
+						<div class="g-recaptcha" data-sitekey="6Lev6nYsAAAAAHT-hY6swtQbiZjZUPHfdZIIgQ2K"></div>
+					</center>
 					
 					<input type="button" class="button" value="Отправить" onclick="LogIn()" style="margin-top: 0px;"/>
 					<img src = "img/loading.gif" class="loading" style="margin-top: 0px;"/>
@@ -87,46 +91,60 @@
 			}
 			
 			function LogIn() {
-				var _login = document.getElementsByName("_login")[0].value;
-				loading.style.display = "block";
-				button.className = "button_diactive";
-				
-				var data = new FormData();
-				data.append("login", _login);
-				
-				// AJAX запрос
-				$.ajax({
-					url         : 'ajax/recovery.php',
-					type        : 'POST', // важно!
-					data        : data,
-					cache       : false,
-					dataType    : 'html',
-					// отключаем обработку передаваемых данных, пусть передаются как есть
-					processData : false,
-					// отключаем установку заголовка типа запроса. Так jQuery скажет серверу что это строковой запрос
-					contentType : false, 
-					// функция успешного ответа сервера
-					success: function (_data) {
-						
-						if(_data == -1) {
-							EnableError();
-							loading.style.display = "none";
-							button.className = "button";
-						} else {
-							console.log("Пароль изменён, ID абитуриента: " +_data);
-							document.getElementsByClassName('success')[0].style.display = "block";
-							document.getElementsByClassName('description')[0].innerHTML = "На указанный вами адрес <b>"+_login+"</b> будет отправлено письмо с новым паролем.";
-							
-							document.getElementsByClassName('login')[0].style.display = "none";
-						}
-					},
-					// функция ошибки
-					error: function( ){
-						console.log('Системная ошибка!');
-						loading.style.display = "none";
-						button.className = "button";
-					}
-				});
+                var _login = document.getElementsByName("_login")[0].value;
+                
+                // Проверка капчи
+                var captcha = grecaptcha.getResponse();
+                if(captcha.length == 0){
+                    alert("Необходимо пройти проверку на робота!");
+                    return;
+                }
+                
+                if(_login == ""){
+                    alert("Введите email.");
+                    return;
+                }
+                
+                loading.style.display = "block";
+                button.className = "button_diactive";
+                
+                var data = new FormData();
+                data.append("login", _login);
+                data.append("g-recaptcha-response", captcha);
+                
+                // AJAX запрос
+                $.ajax({
+                    url         : 'ajax/recovery.php',
+                    type        : 'POST', // важно!
+                    data        : data,
+                    cache       : false,
+                    dataType    : 'html',
+                    // отключаем обработку передаваемых данных, пусть передаются как есть
+                    processData : false,
+                    // отключаем установку заголовка типа запроса. Так jQuery скажет серверу что это строковой запрос
+                    contentType : false, 
+                    // функция успешного ответа сервера
+                    success: function (_data) {
+                        
+                        if(_data == -1 || _data == "Пользователь не распознан" || _data == "Нет пройденной проверки") {
+                            EnableError();
+                            loading.style.display = "none";
+                            button.className = "button";
+                        } else {
+                            console.log("Пароль изменён, ID абитуриента: " +_data);
+                            document.getElementsByClassName('success')[0].style.display = "block";
+                            document.getElementsByClassName('description')[0].innerHTML = "На указанный вами адрес <b>"+_login+"</b> будет отправлено письмо с новым паролем.";
+                            
+                            document.getElementsByClassName('login')[0].style.display = "none";
+                        }
+                    },
+                    // функция ошибки
+                    error: function( ){
+                        console.log('Системная ошибка!');
+                        loading.style.display = "none";
+                        button.className = "button";
+                    }
+                });
 			}
 		</script>
 	</body>
