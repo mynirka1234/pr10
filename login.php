@@ -67,6 +67,12 @@
 				var button = document.getElementsByClassName("button")[0];
 				var _login = document.getElementsByName("_login")[0].value;
 				var _password = document.getElementsByName("_password")[0].value;
+				
+				var captcha = grecaptcha.getResponse();
+                if(captcha.length == 0){
+                    alert("Необходимо пройти проверку на робота!");
+                    return;
+                }
                 
                 if(_login == ""){
                     alert("Введите логин.");
@@ -82,6 +88,7 @@
 				var data = new FormData();
                 data.append("login", _login);
 				data.append("password", _password);
+				data.append("g-recaptcha-response", captcha);
 				
 				// AJAX запрос
 				$.ajax({
